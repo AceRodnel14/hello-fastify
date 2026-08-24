@@ -1,0 +1,26 @@
+{{- if .Values.keda.enabled -}}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "hello-fastify.fullname" . }}
+  labels:
+    {{- include "hello-fastify.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "hello-fastify.fullname" . }}
+  minReplicaCount: {{ .Values.keda.minReplicaCount }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount }}
+  triggers:
+    # KEDA's built-in cpu/memory triggers read from the same
+    # metrics-server data a native HPA would — no extra scaler infra
+    # needed. Requires resources.requests to be set (it is, above);
+    # utilization % is calculated against the request, not the limit.
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.keda.cpuUtilization | quote }}
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: {{ .Values.keda.memoryUtilization | quote }}
+{{- end -}}

@@ -1,0 +1,104 @@
+replicaCount: 2
+# Note: replicaCount is only used when keda.enabled is false — once KEDA
+# owns the ScaledObject, it takes over setting spec.replicas on the
+# Deployment (min/maxReplicaCount below control the range instead).
+
+keda:
+  enabled: false
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  # Both triggers are evaluated independently; KEDA scales to satisfy
+  # whichever one wants more replicas at any given moment — so "either
+  # CPU or memory hits the threshold" is the default behavior already.
+  cpuUtilization: 75
+  memoryUtilization: 75
+
+image:
+  repository: <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/hello-fastify
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+  targetPort: 8000
+
+# The app only ever speaks plain HTTP. Traefik is the only thing that
+# terminates TLS, and only does so if/when a real cert-resolver/cert
+# is wired up on the entrypoint — the Service and container stay HTTP-only.
+ingress:
+  # Two supported styles — turn on whichever matches how Traefik is
+  # installed in the cluster. Both are HTTP-only from the Service down.
+  enabled: true
+  className: traefik
+  host: hello-fastify.example.com
+
+  # style: "ingress" uses a vanilla Kubernetes Ingress resource with
+  # ingressClassName: traefik — works with any Traefik install that
+  # watches Ingress objects, no CRDs required.
+  # style: "ingressRoute" uses Traefik's own IngressRoute CRD instead,
+  # for clusters where Traefik's CRDs are installed and preferred.
+  style: ingress
+
+  annotations: {}
+  # entryPoints only apply when style: ingressRoute
+  entryPoints:
+    - web
+    # - websecure   # uncomment once/if TLS termination is wired up on Traefik
+
+  # Sticky sessions — pins a client to the pod it first landed on via a
+  # cookie. Applied differently depending on ingress.style (see
+  # service.yaml for "ingress" style, ingressroute.yaml for "ingressRoute").
+  # Note: on scale-down, a session pinned to a pod that gets terminated
+  # loses its stickiness — KEDA scaling and sticky sessions can interact.
+  sticky:
+    enabled: false
+    cookieName: hello-fastify-affinity
+    secure: true
+    httpOnly: true
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  initialDelaySeconds: 3
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 15
+
+serviceAccount:
+  create: true
+  name: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  fsGroup: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsUser: 65532
+  runAsGroup: 65532
+  capabilities:
+    drop: ["ALL"]
+
+env:
+  SERVICE_NAME: hello-fastify
+  LOG_LEVEL: info
+  # VAR: someone   # optional — server.ts defaults to "world" if unset
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hello-fastify
+description: Helm chart for hello-fastify, a Node/Fastify service on EKS behind Traefik
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

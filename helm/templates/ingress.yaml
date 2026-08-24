@@ -1,0 +1,28 @@
+{{- if and .Values.ingress.enabled (eq .Values.ingress.style "ingress") -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "hello-fastify.fullname" . }}
+  labels:
+    {{- include "hello-fastify.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "hello-fastify.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+  # No `tls:` block here on purpose — the Service is HTTP-only.
+  # TLS termination, if/when it happens, is configured on Traefik's
+  # `websecure` entrypoint (cert-resolver, Secret, etc.), not here.
+{{- end -}}

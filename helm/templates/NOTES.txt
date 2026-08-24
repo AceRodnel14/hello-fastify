@@ -1,0 +1,14 @@
+hello-fastify has been deployed.
+
+Ingress style: {{ .Values.ingress.style }}
+{{- if .Values.ingress.enabled }}
+Host:          {{ .Values.ingress.host }}
+
+The Service and Pods only ever speak plain HTTP on port {{ .Values.service.targetPort }}.
+Traefik is the sole TLS termination point (if/when TLS is configured at all) —
+nothing changes on this chart's side to add HTTPS later; you'd only touch
+Traefik's entrypoints / cert-resolver / websecure config.
+{{- else }}
+Ingress is disabled — reach the service in-cluster via:
+  {{ include "hello-fastify.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+{{- end }}
