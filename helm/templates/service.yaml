@@ -4,7 +4,7 @@ metadata:
   name: {{ include "hello-fastify.fullname" . }}
   labels:
     {{- include "hello-fastify.labels" . | nindent 4 }}
-  {{- if and .Values.ingress.sticky.enabled (eq .Values.ingress.style "ingress") }}
+  {{- if .Values.ingress.sticky.enabled }}
   annotations:
     traefik.ingress.kubernetes.io/service.sticky.cookie: "true"
     traefik.ingress.kubernetes.io/service.sticky.cookie.name: {{ .Values.ingress.sticky.cookieName | quote }}

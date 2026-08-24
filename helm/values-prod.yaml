@@ -1,0 +1,47 @@
+replicaCount: 1
+
+image:
+  repository: eacer/hello-fastify:main
+  tag: "main"
+  pullPolicy: Always
+
+service:
+  port: 80
+  targetPort: 8000
+
+# Plain HTTP only — Ingress routed through the existing Traefik on the
+# `web` entrypoint. No TLS, no HTTPS conversion.
+ingress:
+  enabled: true
+  className: ""
+  host: fastify.homelab
+  entryPoint: web
+
+  annotations: {}
+
+  # Sticky sessions — pins a client to the pod it first landed on via a
+  # cookie, set as annotations on the Service (see service.yaml).
+  # Note: on scale-down, a session pinned to a pod that gets terminated
+  # loses its stickiness — KEDA scaling and sticky sessions can interact.
+  sticky:
+    enabled: false
+    cookieName: hello-fastify-affinity
+    secure: true
+    httpOnly: true
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+env:
+  SERVICE_NAME: hello-fastify
+  LOG_LEVEL: info
+  # VAR: someone   # optional — server.ts defaults to "world" if unset
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

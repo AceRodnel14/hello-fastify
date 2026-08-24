@@ -19,35 +19,24 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  port: 80
+  port: 8000
   targetPort: 8000
 
-# The app only ever speaks plain HTTP. Traefik is the only thing that
-# terminates TLS, and only does so if/when a real cert-resolver/cert
-# is wired up on the entrypoint — the Service and container stay HTTP-only.
+# Plain HTTP only — Ingress routed through the existing Traefik on the
+# `web` entrypoint. No TLS, no HTTPS conversion.
 ingress:
-  # Two supported styles — turn on whichever matches how Traefik is
-  # installed in the cluster. Both are HTTP-only from the Service down.
   enabled: true
-  className: traefik
+  # Left empty to match how every other Ingress in this cluster is set up
+  # (no ingressClassName set) — Traefik picks them up regardless. Set this
+  # if that ever changes or a second controller gets added to the cluster.
+  className: ""
   host: hello-fastify.example.com
-
-  # style: "ingress" uses a vanilla Kubernetes Ingress resource with
-  # ingressClassName: traefik — works with any Traefik install that
-  # watches Ingress objects, no CRDs required.
-  # style: "ingressRoute" uses Traefik's own IngressRoute CRD instead,
-  # for clusters where Traefik's CRDs are installed and preferred.
-  style: ingress
+  entryPoint: web
 
   annotations: {}
-  # entryPoints only apply when style: ingressRoute
-  entryPoints:
-    - web
-    # - websecure   # uncomment once/if TLS termination is wired up on Traefik
 
   # Sticky sessions — pins a client to the pod it first landed on via a
-  # cookie. Applied differently depending on ingress.style (see
-  # service.yaml for "ingress" style, ingressroute.yaml for "ingressRoute").
+  # cookie, set as annotations on the Service (see service.yaml).
   # Note: on scale-down, a session pinned to a pod that gets terminated
   # loses its stickiness — KEDA scaling and sticky sessions can interact.
   sticky:
